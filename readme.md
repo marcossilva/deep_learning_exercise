@@ -1,55 +1,37 @@
-# Handwriting generation!
+### Aproach on the Text Prediction
+Build a 2 layer GRU with an encoder-decoder architecture with the sentence reversed. Building an extra layer over the GRU helps it capture knowledge representations better over time. GRU cell was chosen instead of the LSTM simply for performance execution and hence the similar results the Occam's razor principle applies. The encoder capture the sequence of strokes that generated the sentence and the decoder takes this dense representation of the sequence and unroll it in the text prediction.
 
-Hey! Welcome to Lyrebird! We're excited to have you here. Since we work a lot with neural networks, this task will introduce you to the kind of models that we work with everyday. If you get stuck, please contact me and I'll be happy to provide hints.
+Since this encoder-decoder correspond to a many-to-many application I decided to pad both input and output at x.mean() + 2* x/std() to normalize the sentences lenght with zero padding. This value covered over 95% of both strokes and sentences lenghts in the dataset.
 
-We will solve a fun problem: handwriting generation. This problem involves 2 sequences: a sequence of text (input) and a sequence of points related to the position of a pen (output). If you haven't done it before, please check out [this great paper](https://arxiv.org/pdf/1308.0850.pdf) by Alex Graves. When you finish this task, you should have your own personal scribe :)
+The text was also one-hot encoded with different representations for lower and upper chars as well as symbols. The char tokenizer was built with the help of the keras Tokenizer library.
 
-```Note: There are many solutions for this task available online. Please, don't look at them while solving it. The purpose of this task is to get you started into the kind of work we do at Lyrebird. We care a lot about your thought processes, the ideas you have to solve difficult problems and your coding style. Trying to copy a solution available online defeats the purpose of this task. Furthermore, it will be very easy to realize if you didn't solve it on your own.```
+### Improvements Scratch
+This task could be tackled as image recognition task instead of sequential using the generated stroke as input for convolutions with objetives similar to yolo (detect position and bounding boxes) and that could be further convoluted to predict the words. This doesn't seem a good approach since many of the samples varies greatly in stroke style and lenght. A similar approach could be used to generate the strokes but, again, it doesn't seem like a good approach to generate realistic handwriting strokes given the GANs outputs in famous applications as pix2pix.
 
+The task could be also tackled as CTC for the text classification but since the GRU with fixed size worked well enough there was no interest in this approach as well.
 
-### Data description:
+The addition of attention layers on the models could also improve its performance, specially given longer sequences. 
 
-There are 2 data files that you need to consider: `data.npy` and `sentences.txt`. `data.npy`contains 6000 sequences of points that correspond to handwritten sentences. `sentences.txt` contains the corresponding text sentences. You can see an example on how to load and plot an example sentence in `example.ipynb`. Each handwritten sentence is represented as a 2D array with T rows and 3 columns. T is the number of timesteps. The first column represents whether to interrupt the current stroke (i.e. when the pen is lifted off the paper). The second and third columns represent the relative coordinates of the new point with respect to the last point. Please have a look at the plot_stroke if you want to understand how to plot this sequence.
+For the handwriting genearation my first attempt was to use an autoencoder which would receive the text, generate a latent representation and the output it to text again. My original idea was to remove the decoder and use a different sequence model to output the X, Y and Pen values to generate the strokes. This approach didn't prove useful given the nature of the strokes.
 
-### Task 1: Unconditional generation.
-The idea here is to create a function that is able to create strokes unconditionally. Please have a look at Figure 11 in [1] to understand better how this should look like.
-```
-def generate_unconditionally(random_seed=1):
-    # Input:
-    #   random_seed - integer
+I also tried to assume that the hipothesis that each letter could be windowed by a smaller sequence of strokes could be true. But for the simplest case the window didn't capture a whole stroke given that many cursive words have a long stroke for a whole sentence invalidating my approach. And again, given the nature of the data distribution it didn't work well.
 
-    # Output:
-    #   stroke - numpy 1D-array
-    return stroke
-```
+I recently heard about variational autoencoders and given the Alex paper instructions I believe both approaches would result in similar results. I tried to implement Alex solution but I: had a hard time on the MDN (Mixture Density Network) mostly because given the absence of a implemented layer in the frameworks I use most (keras, tensorflow) and the nature of the test I had to implement it myself from scratch. But up to this point I still haven't been able to make it work properly.
 
-### Task 2: Conditional generation.
-Things become more fun now. Let's get started with conditional generation. The idea is to create a function that is able to create the strokes for a corresponding text.
-```
-def generate_conditionally(text='welcome to lyrebird', random_seed=1):
-    # Input:
-    #   text - str
-    #   random_seed - integer
+### Setup Used
+Keras                             2.2.4             
+Keras-Applications                1.0.6             
+Keras-Preprocessing               1.0.5
+numpy                             1.15.2
+tb-nightly                        1.12.0a20181015   
+tensorboard                       1.11.0            
+tensorflow                        1.12.0rc0         
+tensorflow-probability            0.4.0
+tf-nightly                        1.12.0.dev20181012
+tf-nightly-gpu                    1.12.0.dev20181012
+tfp-nightly                       0.5.0.dev20181015 
+tfp-nightly-gpu                   0.5.0.dev20181015 
 
-    # Output:
-    #   stroke - numpy 1D-array
-    return stroke
-```
-
-### Task 3: Handwriting recognition. (Optional)
-Can you recognize the text given a stroke?
-```
-def recognize_stroke(stroke):
-    # Input:
-    #   stroke - numpy 1D-array
-
-    # Output:
-    #   text - str
-    return stroke
-```
-
-### Evaluation
-To evaluate your work, please change the second block of imports of the `results.ipynb` notebook. Also, please provide us a link to a github repo to see your work.
 
 ## References:
- [1] https://arxiv.org/abs/1308.0850
+ [1] Alex Graves paper - https://arxiv.org/abs/1308.0850
